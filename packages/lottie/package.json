@@ -1,5 +1,6 @@
 {
-  "name": "@rosg/bsc.lottie",
+  "type": "module",
+  "name": "@rosg/ro.lottie",
   "version": "0.0.0",
   "author": "Addison <addison@pixelpetals.ca>",
   "license": "MIT",

@@ -1,0 +1,37 @@
+{
+  "include": [
+    "./dist/ts/**/*"
+  ],
+
+  "exclude": [
+    "./plugins/**/*",
+    "./typings/**/*",
+    "**/node_modules/**/*",
+  ],
+
+  "compilerOptions": {
+
+    "noEmit": true,
+    "noImplicitReturns": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+
+    "allowJs": true,
+    "checkJs": true,
+    "rootDir": "./dist/ts",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+
+    // babel compatibility
+    "esModuleInterop": true, // allows esm imports in TS
+    "lib": [ "esnext" ], // latest JS features
+    "strict": true, // strict type checking
+
+    // Ensure that Babel can safely transpile files in the TypeScript project
+    //"isolatedModules": true
+  },
+
+  // ts-node
+  "ts-node": {
+    "esm": true, // enabling ESM for ts-node
+  },
+}
