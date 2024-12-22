@@ -1,0 +1,20 @@
+{
+
+  "files": [
+    "**/*",
+    "!**/*.specUtil.bs",
+    "!**/*.spec.bs"
+  ],
+
+  "rootDir": "./src",
+  "stagingDir": "./dist",
+
+  "emitDefinitions": true,
+  "sourceMap": true,
+
+  "retainStagingDir": true,
+  "createPackage": false,
+
+  "autoImportComponentScript": true
+
+}

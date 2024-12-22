@@ -1,0 +1,31 @@
+{
+  "extends": "./bsconfig.json",
+
+  "stagingDir": "./dist",
+  "retainStagingDir": true,
+  "createPackage": false,
+
+  "files": [
+    "**/*"
+  ],
+
+  "plugins": [
+    "rooibos-roku"
+  ],
+
+  "rooibos": {
+    "isRecordingCodeCoverage": false,
+    "testsFilePattern": null,
+    "tags": [
+      "!integration",
+      "!deprecated",
+      "!fixme"
+    ],
+    "showOnlyFailures": true,
+    "catchCrashes": true,
+    "lineWidth": 70,
+    "failFast": false,
+    "sendHomeOnFinish": false
+  }
+
+}
