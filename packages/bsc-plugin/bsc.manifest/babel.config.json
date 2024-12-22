@@ -1,0 +1,47 @@
+{
+  "plugins": [
+    "@babel/plugin-proposal-class-properties",
+    "@babel/plugin-proposal-object-rest-spread",
+    "@babel/plugin-transform-private-methods"
+  ],
+  "presets": [
+    [
+      "@babel/env",
+      {
+        "targets": {
+          "node": "current"
+        },
+        "modules": false // preserve ES6 modules
+      }
+    ]
+  ],
+  "env": {
+    "ts": {
+      "plugins": [
+        "@babel/plugin-typescript" // parses TS, but does not remove
+      ]
+    },
+    "esm": {
+      "presets": [
+        "@babel/typescript" // removes TS code
+      ]
+    },
+    "cjs": {
+      "presets": [
+        "@babel/typescript", // removes TS code
+        [
+          "@babel/env",
+          {
+            "targets": {
+              "node": "current"
+            },
+            "modules": "commonjs"
+          }
+        ]
+      ],
+      "plugins": [
+        [ "replace-import-extension", { "extMapping": { ".js": ".cjs" } } ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+    "rootDir": "src",
+
+    "plugins": [ "@pixelpetals/robloom.bsc-manifest" ],
+
+    "manifest": {
+        "ui_resolutions": "fhd",
+        "rsg_version": "1.2",
+        "splash_min_time": "0",
+        "supports_input_launch": "1",
+        "requires_widevine_drm": "1",
+        "requires_widevine_version": "1.0",
+        "bs_libs_required": "roku_ads_lib,googleima3",
+        "sg_component_libs_required": "roku_analytics",
+        "bs_const": {
+            "profiler": false
+        }
+    },
+    "stagingDir": "out/.compiled",
+    "pruneEmptyCodeFiles": "true",
+    "retainStagingDir": true,
+    "createPackage": false,
+
+    "autoImportComponentScript": true,
+    "sourceMap": true
+}

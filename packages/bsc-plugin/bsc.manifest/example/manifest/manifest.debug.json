@@ -1,0 +1,8 @@
+{
+  "bs_const": {
+    "debug": true,
+    "debugOverlay": true,
+    "debugFPS": true,
+    "demo": false
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "bs_prof_enabled": "0",
+  "bsprof_data_dest": "network",
+  "bsprof_enable_lines": "1",
+  "bsprof_enable_mem": "1",
+  "bsprof_sample_ratio": "0.5",
+  "bs_const": {
+    "profile": true
+  }
+}

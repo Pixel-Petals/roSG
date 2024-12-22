@@ -1,0 +1,6 @@
+{
+  "extends": "bsconfig.json",
+  "extendsManifest": [
+    "manifest/brands/manifest.globaltv.json"
+  ]
+}
