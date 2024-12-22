@@ -1,0 +1,35 @@
+
+Sub Resolve(value = invalid)
+    settle("fulfilled", value)
+End Sub
+
+Sub Reject(value = invalid)
+    settle("rejected", value)
+End Sub
+
+Sub Settle (key, value)
+    isAsync = Is.inTaskThread()
+
+    if isAsync then m.top.queueFields(true)
+
+    if Is.Null(value)
+        fields = { rejected: true }
+        m.top.settled = true
+
+    else
+        fields = {}
+        fields[key] = value
+
+        m.top.addFields(fields)
+        m.top[key] = value
+        m.top.settled = true
+
+    end if
+
+    if isAsync then m.top.queueFields(false)
+
+End Sub
+
+Sub Resolver (args)
+
+End Sub

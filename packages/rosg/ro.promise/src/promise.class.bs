@@ -1,0 +1,168 @@
+
+' *************************************
+'
+' * Promise
+'
+' This is an JavaScript-like implementation of promises.
+' The only public function is promise().
+'
+' * NOTE:
+' * Refer to createPromise() for the
+' * details and functions ofthe promise object.
+'
+' *************************************
+
+' -------------------------------------
+' * Promise()
+'
+' If applicable, executes a function or callFunc, and
+' then returns a promise object to the caller.
+'
+' promise can be called in two formats:
+' * 1. promise(fn)
+' * 2. promise(node, callFunc, resolve, params, rejectField (optional), dataField (optional))
+'
+' * The 1st format works like a typical JS promise.
+' It calls the passed function with parameters (resolve, reject).
+'
+' * The 2nd format is unique to Roku.
+' It allows the caller to create a promise that will automatically
+' handle a node interaction that would normally require
+' observeField and a seperate callback function to handle the observed event.
+'
+' This means that instead you can simply call:
+' promise(node, "callThis", "observeThis").then(sub (result)
+'    do something with the result
+' end sub)
+'
+' @param {dynamic} [functionOrNode] - Either executed immediately if it is a function (1st format) or used for a callFunc operation (2nd format)
+' @param {string} [idOrCallFunc] - Required when first value is a node. Used with the built-in callFunc method. Doubles as a string id for promises.
+' @param {string} [resolve] - Required when first value is a node. Used with observeFieldScoped() to watch for changes as a result of callFunc
+' @param {assocarray} [params={}] - Optional. Parameters that will be passed into the callFunc operation
+' @param {string} [rejectField] - Optional. Enables the promise to watch for changes on another field for errors.
+' @param {string} [dataField] - Optional. Indicates a field that we should use to get data from after resolve or rejectField is triggered.
+' -------------------------------------
+
+const NO_ARGS = "_no-args"
+
+Class Promise
+
+    ' Public Values
+    ' ------------------------------
+
+    public isPromise = true
+
+    public id = ""
+    public isSettled = false
+    public state = Promise.State.PENDING
+
+    public result
+    public context = {}
+
+    fields = {
+        resolve: ""
+        reject: ""
+        data: ""
+    }
+
+    private callbacks = []
+    ' storing the callbacks in an array preserves their scope despite placing them within an associate array
+    ' (which would typically change their scope to be equal to the AA)
+    ' https://developer.roku.com/en-ca/docs/references/brightscript/language/program-statements.md#functionparameter--default-as-type--as-type--end-function
+
+    Sub New (args = NO_ARGS)
+
+        FormatPromiseId = Function (args)
+            id = "promise"
+
+            if Is.String(args) AND args <> NO_ARGS
+                id = args
+
+            else if Is.Func(args)
+                id = AsType.String(args)
+
+            else if Is.Hash(args)
+                id = Array.Find([args.id, args.callFunc, "promise"], Is.String)
+
+            end if
+
+            return Math.Random.ScopedGUID(id, 3)
+        End Function
+
+        m.id = FormatPromiseId(args)
+        Out.Info(`Create New Promise(${m.id})`)
+
+        if Is.Null(args) OR (Is.String(args) AND Is.EQ(args, "_no-args"))
+            return
+        end if
+
+        if Is.Func(args)
+            m.Resolve(args())
+
+        else if Is.Promise(args)
+            m.Resolve(args)
+
+        else if Is.Object(args) AND Is.Node(args.node)
+            m.id = FormatPromiseId(args.node.id)
+
+            if Is.String(args.callFunc, { len: 1 })
+                Promise.Private.call(m, args.node, args.call, args.fields)
+
+            else if Is.Hash(args.fields)
+                Promise.Private.Observe(m, args.node, args.fields)
+
+            end if
+
+        else if not Is.String(args)
+            m.Resolve(args)
+
+        end if
+
+        Promise.Private.PreservePromise(m)
+
+    End Sub
+
+    Function Resolve (result = true)
+        return Promise.Private.Settle(m, Promise.State.FULFILLED, result)
+    End Function
+
+    Function Reject (result = false)
+        return Promise.Private.Settle(m, Promise.State.REJECTED, result)
+    End Function
+
+    Function AddContext (context)
+        m.context.append(context)
+        return m
+    End Function
+
+    Function then (onFulfilled, context = m.context, id = Math.Random.GUID(3))
+        return Promise.Private.then({
+            id: id
+            promise: m
+            onFulfilled: onFulfilled
+            onRejected: invalid
+            context: context
+        })
+    End Function
+
+Function catch (onRejected, context = m.context, id = Math.Random.GUID(3))
+        return Promise.Private.then({
+            id: id
+            promise: m
+            onFulfilled: invalid
+            onRejected: onRejected
+            context: context
+        })
+    End Function
+
+    Function Finally (onFinally, context = m.context, id = Math.Random.GUID(3))
+        return Promise.Private.then({
+            id: id
+            promise: m
+            onFulfilled: onFinally
+            onRejected: onFinally
+            context: context
+        })
+    End Function
+
+End Class

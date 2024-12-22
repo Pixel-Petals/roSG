@@ -1,0 +1,69 @@
+
+Namespace Promise
+
+    Function AsNode (p)
+
+        node = Create.Node("Promise")
+        node.context = p.context
+
+        p.AddContext({
+            promiseNode: node
+
+        }).Then(Function (result, context)
+            context.promiseNode@.Resolve(result)
+            return result
+
+        End Function)
+
+        return node
+
+    End Function
+
+    Function fromNode (promiseNode)
+
+        if not Is.NodeType(promiseNode, "Promise")
+            Out.warn("TypeError")
+            return invalid
+        end if
+
+        Out.Info(`Convert <PromiseNode:${promiseNode.id}> to Promise()`)
+
+        newPromise = invalid
+        if Is.True(promiseNode.settled)
+
+            newPromise = Promise({
+                id: promiseNode.id
+            }).AddContext(promiseNode.context)
+
+            if Is.Valued(promiseNode.fulfilled)
+                newPromise.result = promiseNode.fulfilled
+                newPromise.state = Promise.State.FULFILLED
+                newPromise.settled = true
+            else
+                newPromise.result = promiseNode.rejected
+                newPromise.state = Promise.State.REJECTED
+                newPromise.settled = true
+            end if
+
+        else
+            newPromise = Promise({
+
+                id: promiseNode.id
+                node: promiseNode
+                fields: {
+                    settle: "settled"
+                    resolve: "fulfilled"
+                    reject: "rejected"
+                }
+
+            }).AddContext(promiseNode.context).then(Function (result, _context)
+                return result
+
+            End Function)
+
+        end if
+
+        return newPromise
+    End Function
+
+End Namespace

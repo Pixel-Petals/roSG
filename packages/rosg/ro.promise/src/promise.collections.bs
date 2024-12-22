@@ -1,0 +1,162 @@
+
+import "promise.class.bs"
+import "promise.private.bs"
+
+Namespace Promise
+
+    enum State
+        PENDING = 0
+        FULFILLED = 1
+        REJECTED = 2
+        PAUSED = 3
+    end enum
+
+    ' ------------------------------
+    ' * parallel()
+    '
+    ' Takes an array of promises as input and returns a single Promise.
+    ' This returned promise fulfills when all of the input's promises settle,
+    ' with an array of objects that describe the outcome of each promise.
+    '
+    ' Promise.parallel() is typically used when you have multiple asynchronous
+    ' tasks that are not dependent on one another to complete successfully,
+    ' or you'd always like to know the result of each promise.
+    '
+    ' @param {array} promises - an array of promise objects
+    ' @return {object} promise - a promise that automatically resolves when all of the promises are settled.
+    ' ------------------------------
+
+    Function Parallel (promises)
+        if not Is.ArrayWithLength(promises)
+            return f(new Promise()).resolve()
+        end if
+
+        onPromiseSettled = Sub(_value, context)
+            context = context.parallelCtx
+            context.settledCount = context.settledCount + 1
+
+            if context.settledCount = context.promises.count()
+                values = []
+                for each p in context.promises
+                    values.push(p.result)
+                end for
+
+                context.promise.resolve(values)
+                context.promises.clear()
+            end if
+        End Sub
+
+        parallelPromise = new Promise("parallel")
+        context = {
+            settledCount: 0
+            promises: []
+            promise: parallelPromise
+        }
+
+        for each p in promises
+
+            f(new Promise(p)).AddContext({ parallelCtx: context }).then(onPromiseSettled)
+            context.promises.push(p)
+
+        end for
+
+        return parallelPromise
+    End Function
+
+    Function Sequence (promises, onEach)
+
+        sequencePromise = new Promise()
+
+        if not Is.ArrayWithLength(promises)
+            return sequencePromise.resolve()
+        end if
+
+        ' add pause() and resume() to our promise object
+
+        sequencePromise.pause = Sub ()
+
+            m.state = Promise.State.PAUSED
+
+        End Sub
+
+        sequencePromise.resume = Sub ()
+
+            if m.state = Promise.State.PAUSED
+
+                m.state = Promise.State.PENDING
+                m.context._sequence.pausedOn.resolve()
+
+            end if
+
+        End Sub
+
+        ' create context to track the state of this promise
+
+        context = {
+            _sequence: {
+                settledCount: 0
+                onEach: [onEach]
+                results: []
+                promises: promises
+                promise: sequencePromise
+            }
+        }
+
+        ' onPromiseSettled runs after each promise completes
+        ' this appends the results to the context and calls the onEach function
+
+        onPromiseSettled = Function (result, context)
+
+            context._sequence.settledCount += 1
+            context._sequence.results.push(result)
+
+            cb = context._sequence.onEach[0]
+            cb(context._sequence.results, context) ' callback can be used to pause the sequence
+
+            if (context._sequence.promise.state = Promise.State.PAUSED)
+
+                paused = new Promise()
+                context._sequence.pausedOn = paused
+                return paused
+
+            end if
+
+        End Function
+
+        ' onAllSettled runs after the very last promise is completes
+        ' similar to onPromiseSettled, except that it cannot be paused and resolves the sequence promise
+
+        onAllSettled = Sub(result, context)
+
+            context._sequence.results.push(result)
+
+            cb = context._sequence.onEach[0]
+            cb(context._sequence.results, context)
+
+            context._sequence.promise.resolve()
+            context._sequence.promises.clear()
+
+        End Sub
+
+        ' iterate list of promises and create waterfall sequence
+        ' promise1 => onPromiseSettled -> onEach() -> paused? => promise2 => etc.
+
+        prevPromise = promises.shift()
+        if Is.Func(prevPromise) then prevPromise = prevPromise() ' call the function to get the promise
+
+        for each nextPromise in promises
+
+            prevPromise.then(onPromiseSettled, { context: context }).then(nextPromise, { context: context })
+
+        end for
+
+        if prevPromise <> invalid
+            prevPromise.then(onAllSettled, { context: context })
+        end if
+
+        sequencePromise.context = context
+        return sequencePromise
+
+    End Function
+
+End Namespace

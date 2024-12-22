@@ -1,0 +1,10 @@
+
+Sub New (args)
+
+
+
+End Sub
+
+Sub ResolvePromise (args)
+
+End Sub

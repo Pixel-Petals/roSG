@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<component name="Promise" extends="Base.Node"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="https://devtools.web.roku.com/schema/RokuSceneGraph.xsd"
+>
+
+    <interface>
+
+        <!--
+            Executor ()
+
+            The executor function allows asynchronous code to execute
+            within the Promise.
+        -->
+
+        <function name="Resolve" /> <!-- triggers settled -->
+        <function name="Reject" /> <!-- triggers settled -->
+
+        <!--
+            Settled <boolean>
+
+            This value is set to true when the promise has completed,
+            either by resolving or rejecting.
+        -->
+        <field id="settled"
+            type="boolean"
+            value="false"
+            alwaysNotify="true"
+        />
+
+        <!--
+            Context <object>
+
+            Used to preserve a promise chain's context values.
+        -->
+        <field id="context"
+            type="assocarray"
+            value="{}"
+        />
+
+    </interface>
+
+</component>

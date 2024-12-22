@@ -1,0 +1,237 @@
+
+Namespace Promise.Private
+
+    const PromisesKey = "_promiseIds"
+
+    Function GetScopedPromises ()
+        promises = This().promises
+        if Is.Null(promises) then This().promises = {}
+
+        return This().promises
+    End Function
+
+    Function PreservePromise (p)
+        Promise.Private.GetScopedPromises()[p.id] = p
+    End Function
+
+    Function then (args = { ' bs:disable-line: 1045 (use reserved word End as function name—this does not actually compile into a reserved word)
+            id: ""
+            promise: invalid
+            onFulfilled: invalid
+            onRejected: invalid
+            context: {}
+        }) ' bs:disable-line
+
+        nextPromise = new Promise(`${args.promise.id}---then${args.promise.callbacks.count()}_${args.id}`)
+
+        nextPromise.context = args.context
+        if Is.Null(args.context) OR object.length(args.context) = 0
+            nextPromise.context = args.promise.context
+
+        end if
+
+        if Is.False(args.promise.isSettled)
+
+            args.promise.callbacks.push({
+                promise: nextPromise
+                resolve: [args.onFulfilled]
+                reject: [args.onRejected]
+            })
+
+            return nextPromise
+
+        end if
+
+        result = invalid
+        if Is.True(args.promise.isSettled)
+
+            if args.promise.state = Promise.State.FULFILLED
+                result = Promise.Private.ExecuteCallback(args.onFulfilled, args.promise.result, args.context)
+
+            else
+                result = Promise.Private.ExecuteCallback(args.onRejected, args.promise.result, args.context)
+
+            end if
+
+        end if
+
+        if Is.Promise(result) ' resolve nextPromise when result is resolved
+            result.AddContext({ promise: args.promise }).then(Sub (value, context)
+
+                context.promise.Resolve(value)
+
+            End Sub)
+        end if
+
+        if args.promise.state = Promise.State.FULFILLED
+            nextPromise.Resolve(result)
+
+        else if args.promise.state = Promise.State.REJECTED
+            nextPromise.Reject(result)
+
+        end if
+
+        return nextPromise
+
+    End Function
+
+    Function Settle (p, promiseState, result)
+
+        if Is.Promise(result) ' subsume the promise
+            result.callbacks.append(p.callbacks)
+            p.append(result)
+            return p
+        end if
+
+        if Is.NE(p.state, Promise.State.PENDING)
+            return p
+        end if
+
+        p.result = result
+
+        isFulfilled = Is.EQ(promiseState, Promise.State.FULFILLED)
+        p.state = isFulfilled ? Promise.State.FULFILLED : Promise.State.REJECTED
+        p.isSettled = true
+
+        for each pCallback in p.callbacks
+
+            cb = invalid
+            if isFulfilled
+                cb = pCallback.resolve[0]
+
+            else
+                cb = pCallback.reject[0]
+
+            end if
+
+            cbResult = invalid
+            if Is.Func(cb)
+                cbResult = Promise.Private.executeCallback(cb, p.result, p.context)
+            end if
+
+            if Is.Promise(cbResult)
+
+                if not cbResult.isSettled
+                    cbResult.callbacks.append(pCallback.promise.callbacks)
+
+                else if cbResult.state = Promise.State.FULFILLED
+                    pCallback.promise.resolve(cbResult.result)
+
+                else if cbResult.state = Promise.State.REJECTED
+                    pCallback.promise.reject(cbResult.result)
+
+                end if
+
+            else
+                pCallback.promise.resolve(cbResult)
+
+            end if
+
+        end for
+
+        p.callbacks.clear()
+        return p
+
+    End Function
+
+    Function ExecuteCallback (cb, arg, context)
+
+        if Is.Null(cb) OR Is.Empty.String(cb)
+            return invalid
+        end if
+
+        return cb(arg, context)
+
+    End Function
+
+    Sub Call (p, node, args = invalid, fields = {})
+
+        if Is.Null(p) OR Is.Null(node) OR Is.Null(args) OR Is.Null(fields)
+            return
+        end if
+
+        observable = node
+        response = node.callFunc(args.callFunc, args.callArgs)
+
+        if Is.Node(response) AND (response.hasField(fields.resolve) OR response.hasField(fields.reject))
+            observable = response
+
+        else
+            p.Resolve(response)
+            return
+
+        end if
+
+        Observe(p, observable, fields)
+
+    End Sub
+
+    Function Observe (p, observable, fields = {})
+
+        p.fields = fields
+
+        if not observable.doesExist("promises")
+            observable.update({
+                promises: []
+            }, true)
+        end if
+
+        promises = observable.promises
+        promises.push(p.id)
+        observable.promises = promises
+
+        if Is.Valued(fields.settle)
+            observable.observeFieldScoped(fields.settle, "Promise_Private_onSettle")
+
+        else
+
+            if Is.Valued(fields.resolve)
+                observable.observeFieldScoped(fields.resolve, "Promise_Private_onSettle")
+            end if
+
+            if Is.Valued(fields.reject)
+                observable.observeFieldScoped(fields.reject, "Promise_Private_onSettle")
+            end if
+
+        end if
+
+    End Function
+
+    Sub OnSettle (e)
+
+        node = e.getRoSGNode()
+        field = e.getField()
+
+        promises = GetScopedPromises()
+        nodePromises = node.promises ?? []
+        for each id in nodePromises
+
+            p = promises[id]
+            if Is.Valued(p)
+
+                if Is.Valued(p.fields.settle) then node.unobserveFieldScoped(p.fields.settle)
+                if Is.Valued(p.fields.resolve) then node.unobserveFieldScoped(p.fields.resolve)
+                if Is.Valued(p.fields.reject) then node.unobserveFieldScoped(p.fields.reject)
+
+                data = e.GetData()
+                if Is.Valued(p.fields.data) then data = node[p.fields.data]
+                if Is.Valued(p.fields.settle) AND Is.EQ(field, p.fields.settle)
+                    if Is.Valued(p.fields.resolve) AND Is.Valued(node[p.fields.resolve]) then data = node[p.fields.resolve]
+                    if Is.Valued(p.fields.reject) AND Is.Valued(node[p.fields.reject]) then data = node[p.fields.reject]
+                end if
+
+                if field = p.fields.reject
+                    p.Reject(data)
+
+                else
+                    p.Resolve(data)
+
+                end if
+
+            end if
+
+        end for
+
+    End Sub
+
+End Namespace
