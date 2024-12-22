@@ -1,0 +1,9 @@
+{
+    "typescript.validate.enable": false,
+    "javascript.validate.enable": true,
+    "cSpell.words": [
+        "pixelpetals"
+    ],
+
+    "auto-insert-comma.enableAutoInsertComma": true,
+}

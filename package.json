@@ -1,0 +1,29 @@
+{
+
+  "version": "1.0.2",
+  "name": "rosg",
+
+  "website": "https://github.com/Pixel-Petals/roSG",
+  "author": "Addison Adler <addison@pixelpetals.ca>",
+  "license": "MIT",
+  "description": "A suite of web-like, dynamic components and a host of utilities and polyfills for Roku Scenegraph.",
+  "keywords": [
+    "roku",
+    "ropm"
+  ],
+
+  "workspaces": [
+    "packages/rosg/ro.*",
+    "packages/bsc-plugin/bsc.*",
+    "packages/lottie"
+  ],
+
+  "files": [
+    "dist"
+  ],
+
+  "ropm": {
+    "packageRootDir": "dist/roku"
+  }
+
+}

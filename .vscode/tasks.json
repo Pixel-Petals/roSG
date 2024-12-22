@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "hot-types",
+			"problemMatcher": [
+				"$tsc-watch",
+				"$tsc"
+			],
+			"label": "npm: types - packages/roBloom.lottie",
+			"isBackground": true,
+			"path": "packages/roBloom.lottie",
+			"options": {
+				"cwd": "packages/roBloom.lottie",
+			}
+		}
+	]
+}
